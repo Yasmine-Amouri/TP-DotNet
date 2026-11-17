@@ -10,6 +10,16 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlSer
     builder.Configuration.GetConnectionString("DefaultConnection"))
     );
 
+builder.Services.AddDbContext<RentalDbContext>(options => options.UseSqlServer(
+    builder.Configuration.GetConnectionString("DefaultConnection2"))
+    );
+
+builder.Services.AddSingleton<IMongoClient>(serviceProvider =>
+{
+    var connectionString = builder.Configuration["MongoDb:ConnectionString"];
+    return new MongoClient(connectionString);
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

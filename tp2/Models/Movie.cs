@@ -6,4 +6,5 @@ public class Movie
     public string Name { get; set; } = string.Empty;
     public int GenreId { get; set; }
     public Genre? Genre { get; set; }
+    public bool IsAvailable { get; set; } = true;
 }
