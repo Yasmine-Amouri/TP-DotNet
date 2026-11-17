@@ -12,11 +12,49 @@ public class MovieController : Controller
     
     public MovieController(ApplicationDbContext db) => _db = db;
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string? sortOrder, int page = 1, int pageSize = 5)
     {
-        var movies = await _db.Movies
+    
+        ViewBag.CurrentSort = sortOrder;
+
+        ViewBag.NameSortParm = sortOrder == "name_desc" ? "name" : "name_desc";
+
+        ViewBag.GenreSortParm = sortOrder == "genre_desc" ? "genre" : "genre_desc";
+
+
+        IQueryable<Movie> query = _db.Movies
             .AsNoTracking()
-            .Include(m => m.Genre)
+            .Include(m => m.Genre);
+
+        query = sortOrder switch
+        {
+            "name" => query.OrderBy(m => m.Name),
+            "name_desc" => query.OrderByDescending(m => m.Name),
+
+            "genre" => query.OrderBy(m => m.Genre!.Name),
+            "genre_desc" => query.OrderByDescending(m => m.Genre!.Name),
+
+            _ => query.OrderBy(m => m.Name)
+        };
+
+
+        int totalMovies = await query.CountAsync();
+
+        pageSize = Math.Clamp(pageSize, 1, 50);
+
+        int totalPages = (int)Math.Ceiling((double)totalMovies / pageSize);
+
+        page = Math.Clamp(page, 1, Math.Max(1, totalPages));
+
+
+        ViewBag.CurrentPage = page;
+        ViewBag.TotalPages = totalPages;
+        ViewBag.PageSize = pageSize;
+
+
+        var movies = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
         return View(movies);
