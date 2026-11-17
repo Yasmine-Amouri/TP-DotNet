@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using tp2.Data;
 using tp2.Models;
 
@@ -12,7 +13,14 @@ public class MovieController : Controller
     public MovieController(ApplicationDbContext db) => _db = db;
 
     public async Task<IActionResult> Index()
-        => View(await _db.Movies.AsNoTracking().ToListAsync());
+    {
+        var movies = await _db.Movies
+            .AsNoTracking()
+            .Include(m => m.Genre)
+            .ToListAsync();
+
+        return View(movies);
+    }
     
     public async Task<IActionResult> Details(int? id)
     {
@@ -25,5 +33,98 @@ public class MovieController : Controller
         if (movie == null) return NotFound();
 
         return View(movie);
+    }
+
+    public async Task<IActionResult> Create()
+    {
+        await LoadGenres();
+        return View();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create([Bind("Name,GenreId")] Movie movie)
+    {
+        if (!ModelState.IsValid)
+        {
+            await LoadGenres(movie.GenreId);
+            return View(movie);
+        }
+
+        _db.Movies.Add(movie);
+
+        await _db.SaveChangesAsync();
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    public async Task<IActionResult> Edit(int? id)
+    {
+        if (id == null) return NotFound();
+
+        var movie = await _db.Movies.FindAsync(id);
+
+        if (movie == null) return NotFound();
+
+        await LoadGenres(movie.GenreId);
+
+        return View(movie);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, [Bind("Id,Name,GenreId")] Movie movie)
+    {
+        if (id != movie.Id) return NotFound();
+
+        if (!ModelState.IsValid)
+        {
+            await LoadGenres(movie.GenreId);
+            return View(movie);
+        }
+
+        _db.Movies.Update(movie);
+
+        await _db.SaveChangesAsync();
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    public async Task<IActionResult> Delete(int? id)
+    {
+        if (id == null) return NotFound();
+
+        var movie = await _db.Movies
+            .Include(m => m.Genre)
+            .FirstOrDefaultAsync(m => m.Id == id);
+
+        if (movie == null) return NotFound();
+
+        return View(movie);
+    }
+
+    [HttpPost, ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteConfirmed(int id)
+    {
+        var movie = await _db.Movies.FindAsync(id);
+
+        if (movie == null) return NotFound();
+
+        _db.Movies.Remove(movie);
+
+        await _db.SaveChangesAsync();
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    private async Task LoadGenres(int? selected = null)
+    {
+        var genres = await _db.Genres
+                                .AsNoTracking()
+                                .OrderBy(g => g.Name)
+                                .ToListAsync();
+
+        ViewBag.Genres = new SelectList(genres, "Id", "Name", selected);
     }
 }
