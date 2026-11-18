@@ -24,6 +24,8 @@ builder.Services.AddSingleton<IMongoClient>(serviceProvider =>
 
 builder.Services.AddScoped<RentalService>();
 
+builder.Services.AddSingleton<ReviewService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

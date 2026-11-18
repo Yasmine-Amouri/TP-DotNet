@@ -1,17 +1,21 @@
-
-@model tp2.Models.Movie
+@model tp2.ViewModels.MovieDetailsViewModel
 
 <h2>Détails du film</h2>
 
-<h3>@Model.Name</h3>
+<h3>@Model.Movie.Name</h3>
 
 <p>
-    <strong>Genre :</strong> @(Model.Genre?.Name ?? "Non renseigné")
+    <strong>Genre :</strong> @(Model.Movie.Genre?.Name ?? "Non renseigné")
 </p>
 
 <p>
     <strong>Disponibilité :</strong>
-    @(Model.IsAvailable ? "Disponible" : "Non disponible")
+    @(Model.Movie.IsAvailable ? "Disponible" : "Non disponible")
+</p>
+
+<p>
+    <strong>Note moyenne :</strong>
+    @Model.AverageRating.ToString("0.0") / 5 (@Model.Reviews.Count avis)
 </p>
 
 @if (TempData["RentalSuccess"] != null)
@@ -28,12 +32,12 @@
     </div>
 }
 
-@if (Model.IsAvailable)
+@if (Model.Movie.IsAvailable)
 {
     <h4>Louer ce film</h4>
 
     <form asp-action="Rent" method="post">
-        <input type="hidden" name="movieId" value="@Model.Id" />
+        <input type="hidden" name="movieId" value="@Model.Movie.Id" />
 
         <div class="form-group">
             <label>Client</label>
@@ -51,4 +55,62 @@
     </form>
 }
 
+<hr />
+
+<h4>Avis</h4>
+@if (!Model.Reviews.Any())
+{
+    <p>Aucun avis pour ce film.</p>
+}
+@foreach (var r in Model.Reviews)
+{
+    <div class="mb-2">
+        <strong>@r.Rating / 5</strong>
+        @if (r.Spoiler == true)
+        {
+            <span class="badge bg-warning">Spoiler</span>
+        }
+        @foreach (var t in r.Tags)
+        {
+            <span class="badge bg-secondary">@t</span>
+        }
+        <p>@r.Comment</p>
+    </div>
+}
+
+<h4>Donner un avis</h4>
+
+@if (TempData["ReviewError"] != null)
+{
+    <div class="text-danger">@TempData["ReviewError"]</div>
+}
+
+<form asp-action="AddReview" method="post">
+    <input type="hidden" name="movieId" value="@Model.Movie.Id" />
+
+    <div class="form-group">
+        <label>Note (1 à 5)</label>
+        <input type="number" name="rating" min="1" max="5" class="form-control" required />
+    </div>
+
+    <div class="form-group">
+        <label>Commentaire</label>
+        <textarea name="comment" class="form-control"></textarea>
+    </div>
+
+    <div class="form-group">
+        <label>Étiquettes (séparées par des virgules)</label>
+        <input name="tags" class="form-control" />
+    </div>
+
+    <div class="form-check">
+        <input type="checkbox" name="spoiler" value="true" class="form-check-input" />
+        <label class="form-check-label">Contient des spoilers</label>
+    </div>
+
+    <br />
+    <button type="submit" class="btn btn-primary">Envoyer</button>
+</form>
+
+<br />
 <a asp-action="Index">Retour à la liste</a>

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using tp2.Data;
 using tp2.Models;
 using tp2.Services;
+using tp2.ViewModels;
 
 namespace tp2.Controllers;
 
@@ -12,12 +13,14 @@ public class MovieController : Controller
     private readonly ApplicationDbContext _db;
     private readonly RentalDbContext _rentalDb;
     private readonly RentalService _rentalService;
+    private readonly ReviewService _reviews;
     
-    public MovieController(ApplicationDbContext db, RentalDbContext rentalDb, RentalService rentalService)
+    public MovieController(ApplicationDbContext db, RentalDbContext rentalDb, RentalService rentalService, ReviewService reviews)
     {
         _db = db;
         _rentalDb = rentalDb;
         _rentalService = rentalService;
+        _reviews = reviews;
     }
 
     public async Task<IActionResult> Index(string? sortOrder, int page = 1, int pageSize = 5)
@@ -85,10 +88,16 @@ public class MovieController : Controller
             .OrderBy(c => c.Name)
             .ToListAsync();
 
-        ViewBag.Customers = new SelectList(
-            customers, "Id", "Name");
+        ViewBag.Customers = new SelectList(customers, "Id", "Name");
 
-        return View(movie);
+        var vm = new MovieDetailsViewModel
+        {
+            Movie = movie,
+            Reviews = await _reviews.GetByMovieAsync(movie.Id),
+            AverageRating = await _reviews.AverageRatingAsync(movie.Id)
+        };
+
+        return View(vm);
     }
 
     [HttpPost]
@@ -105,6 +114,35 @@ public class MovieController : Controller
         {
             TempData["RentalError"] = result.ErrorMessage;
         }
+
+        return RedirectToAction(nameof(Details), new { id = movieId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddReview(int movieId, int rating, string? comment, string? tags, bool spoiler)
+    {
+        if (rating < 1 || rating > 5)
+        {
+            TempData["ReviewError"] = "La note doit être comprise entre 1 et 5.";
+            return RedirectToAction(nameof(Details), new { id = movieId });
+        }
+
+        if (!await _db.Movies.AnyAsync(m => m.Id == movieId))
+            return NotFound();
+
+        var review = new Review
+        {
+            MovieId = movieId,
+            Rating = rating,
+            Comment = comment,
+            Spoiler = spoiler,
+            Tags = (tags ?? "")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList()
+        };
+
+        await _reviews.AddAsync(review);
 
         return RedirectToAction(nameof(Details), new { id = movieId });
     }
