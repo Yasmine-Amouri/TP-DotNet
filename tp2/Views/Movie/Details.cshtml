@@ -1,6 +1,54 @@
+
 @model tp2.Models.Movie
 
 <h2>Détails du film</h2>
 
 <h3>@Model.Name</h3>
 
+<p>
+    <strong>Genre :</strong> @(Model.Genre?.Name ?? "Non renseigné")
+</p>
+
+<p>
+    <strong>Disponibilité :</strong>
+    @(Model.IsAvailable ? "Disponible" : "Non disponible")
+</p>
+
+@if (TempData["RentalSuccess"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["RentalSuccess"]
+    </div>
+}
+
+@if (TempData["RentalError"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["RentalError"]
+    </div>
+}
+
+@if (Model.IsAvailable)
+{
+    <h4>Louer ce film</h4>
+
+    <form asp-action="Rent" method="post">
+        <input type="hidden" name="movieId" value="@Model.Id" />
+
+        <div class="form-group">
+            <label>Client</label>
+            <select name="customerId"
+                    class="form-control"
+                    asp-items="@(ViewBag.Customers as SelectList)">
+            </select>
+        </div>
+
+        <br />
+
+        <button type="submit" class="btn btn-primary">
+            Louer
+        </button>
+    </form>
+}
+
+<a asp-action="Index">Retour à la liste</a>

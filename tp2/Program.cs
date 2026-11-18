@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
 using tp2.Data;
+using tp2.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,8 @@ builder.Services.AddSingleton<IMongoClient>(serviceProvider =>
     var connectionString = builder.Configuration["MongoDb:ConnectionString"];
     return new MongoClient(connectionString);
 });
+
+builder.Services.AddScoped<RentalService>();
 
 var app = builder.Build();
 

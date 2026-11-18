@@ -3,14 +3,22 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using tp2.Data;
 using tp2.Models;
+using tp2.Services;
 
 namespace tp2.Controllers;
 
 public class MovieController : Controller
 {
     private readonly ApplicationDbContext _db;
+    private readonly RentalDbContext _rentalDb;
+    private readonly RentalService _rentalService;
     
-    public MovieController(ApplicationDbContext db) => _db = db;
+    public MovieController(ApplicationDbContext db, RentalDbContext rentalDb, RentalService rentalService)
+    {
+        _db = db;
+        _rentalDb = rentalDb;
+        _rentalService = rentalService;
+    }
 
     public async Task<IActionResult> Index(string? sortOrder, int page = 1, int pageSize = 5)
     {
@@ -62,15 +70,43 @@ public class MovieController : Controller
     
     public async Task<IActionResult> Details(int? id)
     {
-        if (id == null) return NotFound();
+        if (id == null)
+            return NotFound();
 
         var movie = await _db.Movies
-            .AsNoTracking()
+            .Include(m => m.Genre)
             .FirstOrDefaultAsync(m => m.Id == id);
 
-        if (movie == null) return NotFound();
+        if (movie == null)
+            return NotFound();
+
+        var customers = await _rentalDb.Customers
+            .AsNoTracking()
+            .OrderBy(c => c.Name)
+            .ToListAsync();
+
+        ViewBag.Customers = new SelectList(
+            customers, "Id", "Name");
 
         return View(movie);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Rent(int movieId, int customerId)
+    {
+        var result = await _rentalService.RentAsync(movieId, customerId);
+
+        if (result.Success)
+        {
+            TempData["RentalSuccess"] = "Film loué avec succès.";
+        }
+        else
+        {
+            TempData["RentalError"] = result.ErrorMessage;
+        }
+
+        return RedirectToAction(nameof(Details), new { id = movieId });
     }
 
     public async Task<IActionResult> Create()
@@ -88,7 +124,7 @@ public class MovieController : Controller
             await LoadGenres(movie.GenreId);
             return View(movie);
         }
-
+        
         _db.Movies.Add(movie);
 
         await _db.SaveChangesAsync();
@@ -156,7 +192,7 @@ public class MovieController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    private async Task LoadGenres(int? selected = null)
+    private async Task LoadGenres(Guid? selected = null)
     {
         var genres = await _db.Genres
                                 .AsNoTracking()

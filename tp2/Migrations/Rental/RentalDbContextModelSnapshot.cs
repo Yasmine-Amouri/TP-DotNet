@@ -47,6 +47,22 @@ namespace tp2.Migrations.Rental
                     b.HasIndex("MembershipTypeId");
 
                     b.ToTable("Customers", "rental");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Email = "amal@example.com",
+                            MembershipTypeId = 2,
+                            Name = "Amal Ben Salah"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Email = "youssef@example.com",
+                            MembershipTypeId = 1,
+                            Name = "Youssef Trabelsi"
+                        });
                 });
 
             modelBuilder.Entity("tp2.Models.MembershipType", b =>
@@ -68,6 +84,26 @@ namespace tp2.Migrations.Rental
                     b.HasKey("Id");
 
                     b.ToTable("MembershipTypes", "rental");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            DiscountPercent = 0,
+                            Name = "Standard"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            DiscountPercent = 10,
+                            Name = "Premium"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            DiscountPercent = 20,
+                            Name = "Gold"
+                        });
                 });
 
             modelBuilder.Entity("tp2.Models.Rental", b =>
