@@ -9,6 +9,15 @@ public class RentalDbContext : DbContext
 
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Rental> Rentals => Set<Rental>();
+    public DbSet<MembershipType> MembershipTypes => Set<MembershipType>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
-        => modelBuilder.HasDefaultSchema("rental");
+    {
+        modelBuilder.HasDefaultSchema("rental");
+        modelBuilder.Entity<Customer>()
+            .HasOne(c => c.MembershipType)
+            .WithMany()
+            .HasForeignKey(c => c.MembershipTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
 }

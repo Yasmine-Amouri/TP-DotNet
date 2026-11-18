@@ -1,0 +1,15 @@
+@model IEnumerable<tp2.Models.Customer>
+
+<h2>Clients</h2>
+<table class="table">
+    <tr><th>Nom</th><th>Email</th><th>Abonnement</th><th>Remise</th></tr>
+    @foreach (var c in Model)
+    {
+        <tr>
+            <td>@c.Name</td>
+            <td>@c.Email</td>
+            <td>@c.MembershipType?.Name</td>
+            <td>@c.MembershipType?.DiscountPercent %</td>
+        </tr>
+    }
+</table>
