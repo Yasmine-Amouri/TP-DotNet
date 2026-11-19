@@ -58,7 +58,18 @@ public class RentalService
     
         movie.IsAvailable = false;
 
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return new RentalResult
+            {
+                Success = false,
+                ErrorMessage = "Ce film vient d'être loué par quelqu'un d'autre."
+            };
+        }
 
         try
         {
